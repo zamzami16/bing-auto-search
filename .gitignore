@@ -1,0 +1,39 @@
+### Go best practice .gitignore
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories (vendor, Go modules)
+/vendor/
+go.sum
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific files
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+
+# Build and release folders
+/bin/
+/build/
+/dist/
+
+# Temporary files
+tmp/
+*.tmp
+
+# Go workspace file
+go.work
