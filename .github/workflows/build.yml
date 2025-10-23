@@ -1,0 +1,85 @@
+name: CI & Release (Windows)
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+env:
+  ARTIFACT_NAME: windows-bin-${{ github.sha }}
+
+jobs:
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Show Go env
+        shell: pwsh
+        run: |
+          go version
+          go env
+
+      - name: Download dependencies
+        shell: pwsh
+        run: |
+          go mod download
+
+      - name: Build (PowerShell script)
+        shell: pwsh
+        run: |
+          ./scripts/build-windows.ps1
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: |
+            bin/**
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-windows
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: artifacts
+
+      - name: Package artifact and checksums
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release | Out-Null
+          $tag = "${{ github.ref_name }}"
+          $zip = "desktop-bing-auto-windows-amd64-$tag.zip"
+          Compress-Archive -Force -Path 'artifacts/bin/desktop-bing-auto.exe' -DestinationPath "release/$zip"
+          Get-FileHash 'artifacts/bin/desktop-bing-auto.exe' -Algorithm SHA256 | ForEach-Object { $_.Hash + '  desktop-bing-auto.exe' } | Out-File -Encoding ascii "release/checksums-$tag.txt"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          files: |
+            release/*.zip
+            release/*.txt
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
