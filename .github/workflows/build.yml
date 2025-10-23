@@ -75,8 +75,10 @@ jobs:
           New-Item -ItemType Directory -Force release | Out-Null
           $tag = "${{ github.ref_name }}"
           $zip = "desktop-bing-auto-windows-amd64-$tag.zip"
-          Compress-Archive -Force -Path 'artifacts/bin/desktop-bing-auto.exe' -DestinationPath "release/$zip"
-          Get-FileHash 'artifacts/bin/desktop-bing-auto.exe' -Algorithm SHA256 | ForEach-Object { $_.Hash + '  desktop-bing-auto.exe' } | Out-File -Encoding ascii "release/checksums-$tag.txt"
+          $exe = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'desktop-bing-auto.exe' | Select-Object -First 1
+          if (-not $exe) { Write-Error 'desktop-bing-auto.exe not found in downloaded artifact.' }
+          Compress-Archive -Force -Path $exe.FullName -DestinationPath "release/$zip"
+          Get-FileHash $exe.FullName -Algorithm SHA256 | ForEach-Object { $_.Hash + '  desktop-bing-auto.exe' } | Out-File -Encoding ascii "release/checksums-$tag.txt"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
