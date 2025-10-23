@@ -39,6 +39,11 @@ jobs:
         run: |
           go mod download
 
+      - name: Ensure module files are tidy
+        shell: pwsh
+        run: |
+          go mod tidy
+
       - name: Build (PowerShell script)
         shell: pwsh
         run: |
