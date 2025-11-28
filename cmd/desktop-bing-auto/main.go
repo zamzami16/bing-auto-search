@@ -10,14 +10,24 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 )
 
+var version = "dev" // injected via ldflags during build
+
 func main() {
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	cfgPath := flag.String("config", "config/config.json", "Path config JSON")
+	shutdown := flag.Bool("shutdown", false, "Auto shutdown computer setelah selesai")
+	showVersion := flag.Bool("version", false, "Tampilkan versi aplikasi")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("Bing Auto Search %s\n", version)
+		return
+	}
 
 	// Make config path relative to executable location
 	exePath, err := os.Executable()
@@ -104,6 +114,15 @@ func main() {
 	}
 
 	fmt.Println("Selesai:", time.Now().Format(time.RFC3339))
+
+	if *shutdown {
+		fmt.Println("Shutdown komputer dalam 10 detik...")
+		time.Sleep(10 * time.Second)
+		cmd := exec.Command("shutdown", "/s", "/t", "0")
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("Gagal shutdown: %v\n", err)
+		}
+	}
 }
 
 func GetDelay(min int, max int, random *rand.Rand) float64 {
