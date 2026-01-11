@@ -48,6 +48,7 @@ jobs:
         shell: pwsh
         run: |
           ./scripts/build-windows.ps1
+          ./scripts/build-mobile-windows.ps1
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -74,11 +75,20 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force release | Out-Null
           $tag = "${{ github.ref_name }}"
-          $zip = "desktop-bing-auto-windows-amd64-$tag.zip"
-          $exe = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'desktop-bing-auto.exe' | Select-Object -First 1
-          if (-not $exe) { Write-Error 'desktop-bing-auto.exe not found in downloaded artifact.' }
-          Compress-Archive -Force -Path $exe.FullName -DestinationPath "release/$zip"
-          Get-FileHash $exe.FullName -Algorithm SHA256 | ForEach-Object { $_.Hash + '  desktop-bing-auto.exe' } | Out-File -Encoding ascii "release/checksums-$tag.txt"
+
+          # Package desktop-bing-auto
+          $zipDesktop = "desktop-bing-auto-windows-amd64-$tag.zip"
+          $exeDesktop = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'desktop-bing-auto.exe' | Select-Object -First 1
+          if (-not $exeDesktop) { Write-Error 'desktop-bing-auto.exe not found in downloaded artifact.' }
+          Compress-Archive -Force -Path $exeDesktop.FullName -DestinationPath "release/$zipDesktop"
+          Get-FileHash $exeDesktop.FullName -Algorithm SHA256 | ForEach-Object { $_.Hash + '  desktop-bing-auto.exe' } | Out-File -Encoding ascii "release/checksums-$tag.txt"
+
+          # Package mobile-auto
+          $zipMobile = "mobile-auto-windows-amd64-$tag.zip"
+          $exeMobile = Get-ChildItem -Path 'artifacts' -Recurse -Filter 'mobile-auto.exe' | Select-Object -First 1
+          if (-not $exeMobile) { Write-Error 'mobile-auto.exe not found in downloaded artifact.' }
+          Compress-Archive -Force -Path $exeMobile.FullName -DestinationPath "release/$zipMobile"
+          Get-FileHash $exeMobile.FullName -Algorithm SHA256 | ForEach-Object { $_.Hash + '  mobile-auto.exe' } | Out-File -Append -Encoding ascii "release/checksums-$tag.txt"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
